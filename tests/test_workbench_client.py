@@ -408,3 +408,21 @@ def test_download_file_not_connected(tmp_path):
         client.download_file("../sample.txt", show_progress=False, target_dir=str(tmp_path)) is None
     )
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "port, expected",
+    [
+        (10001, 'LaunchMechanicalServerOnSystem(SystemName="SYS", PortToUse=10001)'),
+        (0, 'LaunchMechanicalServerOnSystem(SystemName="SYS")'),
+    ],
+)
+def test_start_mechanical_server_script(tmp_path, port, expected):
+    """The port is passed as a separate argument, not inside the system name."""
+    client = _client(tmp_path)
+    with patch.object(client, "run_script_string", return_value=10001) as run_script:
+        assert client.start_mechanical_server("SYS", port=port) == 10001
+
+    script = run_script.call_args.args[0]
+    assert expected in script.splitlines()[2]
+    assert 'SystemName="SYS, Port' not in script and ", Port=" not in script
